@@ -1,0 +1,30 @@
+{
+    "debug": {
+        "msgsExtendedInfo": {
+            "type": "Boolean",
+            "description": "Включать в форматированные сообщения провайдеров данных(msgs механизм) настоящие имена сущностей в дополнение к человекочитаемым наименованиям",
+            "default": false
+        },
+        "includeToResponse": {
+            "type": "Boolean",
+            "description": "Включать в ответ по запросу данных, выполнения действий отладочную информацию",
+            "default": false
+        },
+        "need": {
+            "type": "Boolean",
+            "description": "Глобальный включатель сбора отладочной информации",
+            "default": false
+        }
+    },
+    "@nfjs/back": {
+        "loggerDataEndpoints": {
+            "type": "String",
+            "description": "Имя логгера в контейнере, для логгирования результатов выполнения запросов за данными или их изменнений"
+        },
+        "appNameActionDataset": {
+            "type": "String",
+            "description": "Шаблон для формирования строки, определяющей место в коде приложения вызова соединения при выполнении action и dataset. Пример в значении по умолчанию",
+            "default" : "{applicationName}[{instanceName}]:form[{form}]:id[{id}]"
+        }
+    }
+}
