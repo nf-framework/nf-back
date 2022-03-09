@@ -1,5 +1,5 @@
 import AbortController from 'node-abort-controller';
-import { config, api, debug, common, container } from '@nfjs/core';
+import { config, api, common, container } from '@nfjs/core';
 import { query } from '../lib/dbapi.js';
 import { compileEndpointText } from './compiler.js';
 import { composeServerArgs } from './compose-server-args.js';
@@ -9,30 +9,46 @@ let { loggerDataEndpoints, appNameActionDataset } = config?.['@nfjs/back'] || {}
 if (appNameActionDataset === 'default') appNameActionDataset = '{applicationName}[{instanceName}]:form[{form}]:id[{id}]';
 
 /**
- * Обработка запроса выполнения действия от компонента nf-dataset
- * Ответ от провайдера ожидается в виде объекта {data:[],debug:{},error:""}
- * (error и data взаимно исключают друг друга)
- * Отправляемый объект {data:[],debug:{},error:""}
- * @param {RequestContext} context - контекст запроса к серверу
+ * @typedef NfExecuteDatasetResult
+ * @property {Object} [data] выходные данные при удачном выполнении (если результатом был набор данных, то берется первый лемент)
+ * @property {Object|string} [error] информация об ошибке, если выполнение неудачно
+ * @property {Object} [debug] отладочная информация
  */
-async function endpointDataset(context) {
+
+/**
+ * @typedef NfDataset
+ * @property {string} text текст запроса к источнику данных на его языке
+ * @property {Object} attributes
+ * @property {string} [attributes.provider] имя источника данных
+ * @property {string} [attributes.endpoint] адрес, по которому обратились к веб серверу за данными
+ * @property {Object} serverAttributes
+ * @property {string} [serverAttributes.args] строка, по которой в аргументы выполнения запроса добавятся значения из сессии пользователя
+ */
+
+/**
+ * Обработка выполнения запроса
+ * @param {RequestContext} context контекст запроса к серверу
+ * @param {NfDataset} ds настройки запроса
+ * @param {Object} args аргументы выполнения запроса
+ * @param {ProviderQueryControl} control настройки для преобразования запроса до готового к выполнению состоянию
+ * @returns {NfExecuteDatasetResult}
+ */
+async function handleEndpoint(context, ds, args, control) {
     const controller = new AbortController();
     const signal = controller.signal;
     context.req.on('aborted', () => {
         controller.abort();
     });
-    const { cachedObj: ds, session } = context;
+    const { session } = context;
     let { text, attributes, serverAttributes } = ds;
-    const { args = {}, control } = context.req.body;
     const logArgs = { ...args }, logControl = { ...control };
     let resp = {};
     try {
-        const serverArgs = composeServerArgs(context.session, serverAttributes?.args);
+        const serverArgs = composeServerArgs(session, serverAttributes?.args);
         if (serverArgs) Object.assign(args, serverArgs);
         text = await compileEndpointText(text, args);
 
         const provider = (control && control.provider) || attributes.provider || 'default';
-
         if (provider === 'js') args.__session = session;
 
         const connectPlace = (!!appNameActionDataset)
@@ -64,10 +80,42 @@ async function endpointDataset(context) {
             session_context
         });
     }
-
     return resp;
 }
 
+/**
+ * Обработка запроса выполнения действия от компонента nf-dataset
+ * @param {RequestContext} context контекст запроса к серверу
+ */
+async function endpointNfDataset(context) {
+    const { cachedObj: ds } = context;
+    const { args = {}, control } = context.req.body;
+    return handleEndpoint(context, ds, args, control);
+}
+
+/**
+ * Обработка запроса выполнения действия от компонента pl-dataset
+ * @param {RequestContext} context контекст запроса к серверу
+ */
+async function endpointPlDataset(context) {
+    const { cachedObj: ds } = context;
+    const formName = context?.params?.form;
+    const datasetId = context?.params?.id;
+    const { args = {}, control } = context.req.body;
+    // приведение к формату nf
+    const _ds = {
+        text: ds.text,
+        attributes: {
+            endpoint: `pl-dataset/${formName}/${datasetId}`
+        },
+        serverAttributes: {}
+    };
+    if (ds.provider) _ds.attributes.provider = ds.provider;
+    if (ds.serverArgs) _ds.serverAttributes.args = ds.serverArgs;
+    return handleEndpoint(context, _ds, args, control);
+}
+
 export {
-    endpointDataset,
+    endpointNfDataset,
+    endpointPlDataset,
 };

@@ -18,7 +18,8 @@ const appName = '{applicationName}[{instanceName}]:sqlPath[{sqlPath}]';
  */
 export async function endpointSql(context) {
     let resp, file;
-    const { args, control, sqlPath } = context.req.body;
+    const { args, control } = context.req.body;
+    const sqlPath = context?.params?.sqlPath;
     const controller = new AbortController();
     const signal = controller.signal;
     context.req.on('aborted', () => {

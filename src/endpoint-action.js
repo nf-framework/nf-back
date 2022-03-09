@@ -1,8 +1,10 @@
 import { VM } from 'vm2';
-import { config, api, debug, common, errors, container } from '@nfjs/core';
+import url from 'url';
+import { config, api, debug, common, container, extension } from '@nfjs/core';
 import { compileEndpointText } from './compiler.js';
-import { dataProviders } from '../index.js';
+import { dataProviders} from '../index.js';
 import { composeServerArgs } from './compose-server-args.js';
+
 
 const debugIncludeToResponse = common.getPath(config, 'debug.includeToResponse') || false;
 let { loggerDataEndpoints, appNameActionDataset } = config?.['@nfjs/back'] || {};
@@ -20,7 +22,7 @@ if (appNameActionDataset === 'default') appNameActionDataset = '{applicationName
 /**
  * Серверные атрибуты действия
  * @typedef {Object} NfActionServerAttributes
- * @property {string} args строка, по которой в аргументы выполнения добавяться значения из сессии пользователя
+ * @property {string} args строка, по которой в аргументы выполнения добавятся значения из сессии пользователя
  */
 
 /**
@@ -136,10 +138,10 @@ async function processAction(isActionOn, providers, action, args, inlineObj, ses
     let queryArgs = null;
     let queryType = null;
     const { attributes } = action;
-    // _action_ в args передается когда action - вычисляемый на клиенте
-    if (args._action_ !== undefined) {
-        attributes.action = args._action_;
-        delete args._action_;
+    // __action в args передается когда action - вычисляемый на клиенте
+    if (args.__action !== undefined) {
+        attributes.action = args.__action;
+        delete args.__action;
     }
     // для самого action compose аргументов был сделан уже, для action-on делается здесь
     if (isActionOn && attributes && attributes.args && attributes.args.indexOf('_compose') !== -1) {
@@ -160,9 +162,6 @@ async function processAction(isActionOn, providers, action, args, inlineObj, ses
         } catch (e) {
             const _msg = `Ошибка вычисления аргументов действия [${attributes.action}] для пути [${attributes.path}] с фильтром [${attributes.filter}]`;
             throw api.nfError(e, _msg);
-        }
-        if (attributes.out) {
-            queryArgs.__out = attributes.out;
         }
     } else {
         queryArgs = { ...args };
@@ -241,7 +240,6 @@ async function executeAction(action, args, session, options) {
     const actArgs = common.cloneDeep(args);
     // дополнить аргументы необходимыми из сессии пользователя
     if (action?.serverAttributes?.args) Object.assign(actArgs, composeServerArgs(session, action?.serverAttributes?.args));
-    if (actOut) actArgs.__out = actOut;
     // используются ли вложенные действия
     const useActionsOn = (actOn && Array.isArray(actOn) && actOn.length > 0);
     // провайдер основного действия
@@ -300,10 +298,6 @@ async function executeAction(action, args, session, options) {
         await Promise.all(providers.map((curPrv) => curPrv.api.commit(curPrv.connect)));
         debug.timingEnd(tmng, 'commit');
         debug.timingEnd(tmng, 'all');
-        if (useActionsOn) {
-            // обновляем результат данными, которые могли добавить вложенные действия(action-on)
-            queryResult.data = Object.assign(queryResult.data, argObj);
-        }
         if (queryResult.debug) {
             if (debugIncludeToResponse) {
                 const { timing } = queryResult.debug;
@@ -350,12 +344,12 @@ async function executeAction(action, args, session, options) {
  * @param {NfAction} action действие
  * @param {Object} args входные аргументы
  * @param {SessionAPI} session сессия пользователя
- * @param {Object} options опции
+ * @param {Object} [options] опции
  * @param {string} options.connectPlace указание для провайдера данных, откуда производится действие
  * @returns {Promise<NfExecuteActionResult>}
  */
 async function handleEndpoint(action, args, session, options) {
-    const result = await executeAction(action, args, session, { connectPlace: options.connectPlace });
+    const result = await executeAction(action, args, session, { connectPlace: options && options.connectPlace });
     // записать в журнал запросов за данными
     if (loggerDataEndpoints && container.loggers) {
         const { password, ...session_context } = session?.session?.context;
@@ -386,7 +380,7 @@ async function handleEndpoint(action, args, session, options) {
  * от указанного типа источника данных provider
  * Ответ от провайдера ожидается в виде объекта {data:[],debug:{},error:""}
  * (error и data взаимно исключают друг друга)
- * @param {RequestContext} context - контекст запроса к серверу
+ * @param {RequestContext} context контекст запроса к серверу
  * @returns {Promise<NfExecuteActionResult>}
  */
 async function endpointNfAction(context) {
@@ -507,14 +501,13 @@ function convertToNfAction(from, to, path = '') {
  * от указанного типа источника данных provider
  * Ответ от провайдера ожидается в виде объекта {data:[],debug:{},error:""}
  * (error и data взаимно исключают друг друга)
- * @param {RequestContext} context - контекст запроса к серверу
+ * @param {RequestContext} context контекст запроса к серверу
  * @returns {Promise<NfExecuteActionResult>}
  */
 async function endpointPlAction(context) {
-    const { cachedObj: formBackend, session } = context;
+    const { cachedObj: action, session } = context;
     const formName = context?.params?.form;
     const actionId = context?.params?.id;
-    const action = formBackend[actionId];
     const { args } = context.req.body;
     let connectPlace;
     if (!!appNameActionDataset) connectPlace = appNameActionDataset
@@ -523,12 +516,36 @@ async function endpointPlAction(context) {
     // приведение к формату
     const _action = {};
     convertToNfAction(action, _action);
+    common.setPath(_action, 'attributes.endpoint', `pl-action/${formName}/${actionId}`);
     return handleEndpoint(_action, args, session, { connectPlace });
+}
+
+/**
+ * Обработка запроса выполнения действия, который расположе в подпапках endpoint/action подключенных модулей
+ * @param {RequestContext} context - контекст запроса к серверу
+ * @returns {Promise<NfExecuteActionResult>}
+ */
+async function endpointAction(context) {
+    const { session } = context;
+    const { args } = context.req.body;
+    const actionPath = context.params.actionPath;
+    // поиск action файла с учетом порядка подключения модулей
+    const file = await extension.getFiles('endpoint/action/' + actionPath.replace(/\./g, '/') + '.js');
+    if (!file) throw new Error(`action [${actionPath}] not found.`);
+    const urlFile = url.pathToFileURL(file).toString();
+    const actFile = await import(urlFile);
+    const action = actFile?.default;
+    // приведение к формату
+    const _action = {};
+    convertToNfAction(action, _action);
+    common.setPath(_action, 'attributes.endpoint', `endpoint-action/${actionPath}`);
+    return handleEndpoint(_action, args, session);
 }
 
 export {
     sortOn,
     convertToNfAction,
     endpointNfAction,
-    endpointPlAction
+    endpointPlAction,
+    endpointAction
 };

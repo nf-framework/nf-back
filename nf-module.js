@@ -4,6 +4,7 @@ import { config, api } from '@nfjs/core';
 
 import { endpointData } from './src/endpoint-data.js';
 import { endpointSql } from './src/endpoint-sql.js';
+import { endpointAction } from './src/endpoint-action.js';
 import { NFJsProvider } from './lib/provider-js.js';
 import { web, dataProviders } from './index.js';
 import json from './middlewares/json.js';
@@ -43,9 +44,18 @@ async function init() {
     dataProviders.js = new NFJsProvider({ type: 'nodejs', credentialsSource: 'session' }, 'js');
 
     if (web) {
-        web.on('POST', '/@nfjs/back/endpoint-sql', { middleware: ['session', 'auth', 'json'] }, async (context) => {
-            await endpointData(context, endpointSql);
-        });
+        web.on(
+            'POST',
+            '/@nfjs/back/endpoint-sql/:sqlPath',
+            { middleware: ['session', 'auth', 'json'] },
+            async (context) => { await endpointData(context, endpointSql);}
+        );
+        web.on(
+            'POST',
+            '/@nfjs/back/endpoint-action/:actionPath',
+            { middleware: ['session', 'auth', 'json'] },
+            async (context) => { await endpointData(context, endpointAction);}
+        );
     }
 
     if (config.https_port && config.ssl_keyfile && config.ssl_certfile) {

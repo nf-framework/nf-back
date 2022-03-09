@@ -13,4 +13,4 @@ export * as dbsrc from './lib/dbsrc.js';
 export { ComponentCache } from './src/component-cache.js';
 export { endpointData } from './src/endpoint-data.js';
 export { endpointNfAction, endpointPlAction } from './src/endpoint-action.js';
-export { endpointDataset } from './src/endpoint-dataset.js';
+export { endpointNfDataset, endpointPlDataset } from './src/endpoint-dataset.js';
