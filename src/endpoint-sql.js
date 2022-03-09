@@ -29,7 +29,7 @@ export async function endpointSql(context) {
     try {
         // поиск sql файла с учетом порядка подключения модулей
         // TODO cache?
-        file = await extension.getFiles(endpointSqlDir + sqlPath + '.sql');
+        file = await extension.getFiles(endpointSqlDir + sqlPath.replace(/\./g, '/') + '.sql');
         if (!file) throw new Error(`sql [${sqlPath}] not found.`);
         let text = await fs.readFile(file, 'utf8');
         //
