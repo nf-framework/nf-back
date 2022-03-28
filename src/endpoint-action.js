@@ -452,7 +452,8 @@ function convertToNfAction(from, to, path = '') {
         if (k.charAt(0) === '@') {
             // для всех уровней в объекте, кроме нулевого
             k.substr(1).split(';').filter(f => path !== '').forEach(filter => {
-                from[k].forEach(act => {
+                const acts = (Array.isArray(from[k]) ? from[k] : [from[k]]);
+                acts.forEach(act => {
                     const attributes = {
                         path,
                         filter
