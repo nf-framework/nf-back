@@ -1,7 +1,7 @@
 import { VM } from 'vm2';
 import url from 'url';
 import { config, api, debug, common, container, extension } from '@nfjs/core';
-import { compileEndpointText } from './compiler.js';
+import { compileText } from './compiler.js';
 import { dataProviders} from '../index.js';
 import { composeServerArgs } from './compose-server-args.js';
 
@@ -183,7 +183,7 @@ async function processAction(isActionOn, providers, action, args, inlineObj, ses
         queryType = 'query';
         queryText = action.text.trim();
         queryArgs && (queryArgs.__context = session.get('context'));
-        queryText = await compileEndpointText(queryText, queryArgs);
+        queryText = await compileText(queryText, queryArgs);
         queryArgs && (delete queryArgs.__context);
     }
     let queryResult;

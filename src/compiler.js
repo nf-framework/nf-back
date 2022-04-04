@@ -14,7 +14,7 @@ hb.registerHelper('js', async (options) => dataProviders.js.query(null, options.
  * @param {Object} args - значения для переменных шаблона
  * @return {Promise<string>}
  */
-async function compileEndpointText(text, args) {
+async function compileText(text, args) {
     try {
         const compiled = hb.compile(text);
         return compiled(args);
@@ -24,5 +24,5 @@ async function compileEndpointText(text, args) {
 }
 
 export {
-    compileEndpointText,
+    compileText,
 };

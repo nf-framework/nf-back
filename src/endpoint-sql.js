@@ -1,7 +1,6 @@
 import AbortController from 'node-abort-controller';
 import { config, api, container, extension } from '@nfjs/core';
 import { query } from '../lib/dbapi.js';
-import { compileEndpointText } from './compiler.js';
 import fs from 'fs/promises';
 
 const endpointSqlDir = 'endpoint/sql/';
@@ -53,8 +52,6 @@ export async function executeSql(sqlPath, params, options, control) {
             }, serverArgs);
             if (Object.keys(serverArgs).length > 0) Object.assign(params, serverArgs);
         }
-        // вычисление финального sql, если в нем использовалась шаблонизация handlebars
-        text = await compileEndpointText(text, params);
         const outerProvider = options?.provider || control?.provider;
         let innerProviders = sqlOptions?.provider || 'default';
         if (!Array.isArray(innerProviders)) innerProviders = [innerProviders];

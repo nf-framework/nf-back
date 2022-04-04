@@ -1,7 +1,6 @@
 import AbortController from 'node-abort-controller';
 import { config, api, common, container } from '@nfjs/core';
 import { query } from '../lib/dbapi.js';
-import { compileEndpointText } from './compiler.js';
 import { composeServerArgs } from './compose-server-args.js';
 
 const debugIncludeToResponse = common.getPath(config, 'debug.includeToResponse') || false;
@@ -46,7 +45,6 @@ async function handleEndpoint(context, ds, args, control) {
     try {
         const serverArgs = composeServerArgs(session, serverAttributes?.args);
         if (serverArgs) Object.assign(args, serverArgs);
-        text = await compileEndpointText(text, args);
 
         const provider = (control && control.provider) || attributes.provider || 'default';
         if (provider === 'js') args.__session = session;
