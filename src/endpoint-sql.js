@@ -10,22 +10,23 @@ const { loggerDataEndpoints } = config?.['@nfjs/back'] || {};
 const appName = '{applicationName}[{instanceName}]:sqlPath[{sqlPath}]';
 
 /**
- * Обработка запроса выполнения действия по запрашиваемому sql файлу
- * Ответ от провайдера ожидается в виде объекта {data:[],debug:{},error:""} (error и data взаимно исключают друг друга)
- * Отправляемый объект {data:[],debug:{},error:""}
- * @param {RequestContext} context - контекст запроса к серверу
- * @returns {Promise<{data:[],debug:{},error:""}>}
+ * @typedef NfExecuteSqlResult
+ * @property {Object} [data] выходные данные при удачном выполнении
+ * @property {Object|string} [error] информация об ошибке, если выполнение неудачно
+ * @property {Object} [debug] отладочная информация
  */
-export async function endpointSql(context) {
-    let resp, file;
-    const { args, control } = context.req.body;
-    const sqlPath = context?.params?.sqlPath;
-    const controller = new AbortController();
-    const signal = controller.signal;
-    context.req.on('aborted', () => {
-        controller.abort();
-    });
 
+
+/**
+ * Выполнение sql из файла
+ * @param {string} sqlPath относительный путь к sql файлу, где вместо "/" использованы "."
+ * @param {Object} params параметры выполнения
+ * @param {BackApiProviderQueryOptions} options настройки формирования отдаваемых данных и прочее, что не касается самого текста запроса
+ * @param {ProviderQueryControl} [control] настройки для преобразования запроса до готового к выполнению состоянию
+ * @returns {Promise<NfExecuteSqlResult>}
+ */
+export async function executeSql(sqlPath, params, options, control) {
+    let resp, file;
     try {
         // поиск sql файла с учетом порядка подключения модулей
         // TODO cache?
@@ -33,16 +34,16 @@ export async function endpointSql(context) {
         if (!file) throw new Error(`sql [${sqlPath}] not found.`);
         let text = await fs.readFile(file, 'utf8');
         //
-        let options = {};
+        let sqlOptions = {};
         const lines = text.split('\n');
         if (lines[0].startsWith('--[options]')) {
-            options = JSON.parse(lines[0].substr(11));
+            sqlOptions = JSON.parse(lines[0].substr(11));
             text = lines.splice(1).join('\n');
         }
         // вставка в параметры запрошенных переменных из сессии пользователя
-        if (options?.session) {
+        if (sqlOptions?.paramsFromSession) {
             const serverArgs = {};
-            options.session.reduce((acc, cur) => {
+            sqlOptions.paramsFromSession.reduce((acc, cur) => {
                 if (typeof cur === 'string') {
                     acc[cur] = context.session.get(`context.${cur}`);
                 } else if (Array.isArray(cur)) {
@@ -50,15 +51,16 @@ export async function endpointSql(context) {
                 }
                 return acc;
             }, serverArgs);
-            if (Object.keys(serverArgs).length > 0) Object.assign(args, serverArgs);
+            if (Object.keys(serverArgs).length > 0) Object.assign(params, serverArgs);
         }
         // вычисление финального sql, если в нем использовалась шаблонизация handlebars
-        text = await compileEndpointText(text, args);
-        const _provider = control?.provider || options?.provider || 'default';
-        const connectPlace = (!!appName)
+        text = await compileEndpointText(text, params);
+        const queryOptions = { ...sqlOptions, ...options };
+        queryOptions.provider = control?.provider || sqlOptions?.provider || 'default';
+        queryOptions.connectPlace = (!!appName)
             ? appName.replace(/{sqlPath}/g, sqlPath)
             : undefined;
-        resp = await query(text, args,{ signal, provider: _provider, context, connectPlace }, control);
+        resp = await query(text, params, queryOptions, control);
         if ('debug' in resp && !debugIncludeToResponse) delete resp.debug;
     } catch (e) {
         const err = api.nfError(e);
@@ -85,4 +87,21 @@ export async function endpointSql(context) {
         });
     }
     return resp;
+}
+
+/**
+ * Обработка запроса выполнения действия по запрашиваемому sql файлу
+ * @param {RequestContext} context - контекст запроса к серверу
+ * @returns {Promise<NfExecuteSqlResult>}
+ */
+export async function endpointSql(context) {
+    const { args, control } = context.req.body;
+    const sqlPath = context?.params?.sqlPath;
+    const controller = new AbortController();
+    const signal = controller.signal;
+    context.req.on('aborted', () => {
+        controller.abort();
+    });
+    const options = { context, signal };
+    return executeSql(sqlPath, args, options, control);
 }

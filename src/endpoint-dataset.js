@@ -10,7 +10,7 @@ if (appNameActionDataset === 'default') appNameActionDataset = '{applicationName
 
 /**
  * @typedef NfExecuteDatasetResult
- * @property {Object} [data] выходные данные при удачном выполнении (если результатом был набор данных, то берется первый лемент)
+ * @property {Object} [data] выходные данные при удачном выполнении
  * @property {Object|string} [error] информация об ошибке, если выполнение неудачно
  * @property {Object} [debug] отладочная информация
  */
