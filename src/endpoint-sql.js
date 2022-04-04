@@ -55,8 +55,22 @@ export async function executeSql(sqlPath, params, options, control) {
         }
         // вычисление финального sql, если в нем использовалась шаблонизация handlebars
         text = await compileEndpointText(text, params);
+        const outerProvider = options?.provider || control?.provider;
+        let innerProviders = sqlOptions?.provider || 'default';
+        if (!Array.isArray(innerProviders)) innerProviders = [innerProviders];
+        let provider;
+        // проверить, что указанный снаружи провайдер разрешен
+        if (outerProvider) {
+            if (innerProviders.includes(outerProvider)) {
+                provider = outerProvider;
+            } else {
+                throw new Error('Указанный провайдер для запроса не входит в список допустимых.');
+            }
+        } else {
+            provider = innerProviders[0];
+        }
         const queryOptions = { ...sqlOptions, ...options };
-        queryOptions.provider = control?.provider || sqlOptions?.provider || 'default';
+        queryOptions.provider = provider;
         queryOptions.connectPlace = (!!appName)
             ? appName.replace(/{sqlPath}/g, sqlPath)
             : undefined;
