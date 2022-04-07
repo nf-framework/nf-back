@@ -98,7 +98,7 @@ async function actionOns(providers, args, ons, deepPath, inlineObj, session, ind
 
     const resObj = {};
     for (let a = 0; a < arrProccess.length; a++) {
-        const action = arrProccess[a]._action;
+        const action = arrProccess[a].$action;
         if (deepPath) {
             common.setPath(inlineObj, deepPath, arrProccess[a]);
         }
@@ -138,10 +138,10 @@ async function processAction(isActionOn, providers, action, args, inlineObj, ses
     let queryArgs = null;
     let queryType = null;
     const { attributes } = action;
-    // __action в args передается когда action - вычисляемый на клиенте
-    if (args.__action !== undefined) {
-        attributes.action = args.__action;
-        delete args.__action;
+    // $$action в args передается когда action - вычисляемый на клиенте
+    if (args.$$action !== undefined) {
+        attributes.action = args.$$action;
+        delete args.$$action;
     }
     // для самого action compose аргументов был сделан уже, для action-on делается здесь
     if (isActionOn && attributes && attributes.args && attributes.args.indexOf('_compose') !== -1) {
