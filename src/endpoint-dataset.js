@@ -52,8 +52,9 @@ async function handleEndpoint(context, ds, args, control) {
         const connectPlace = (!!appNameActionDataset)
             ? appNameActionDataset.replace(/{form}/g, context?.params?.form).replace(/{id}/g, context?.params?.id)
             : undefined;
-
-        resp = await query(text, args,{ ...attributes, signal, provider, context, connectPlace }, control);
+        const defaultOptions = { rowMode: 'array', returnRN: true };
+        const options = { ...defaultOptions, ...attributes, ...{ signal, provider, context, connectPlace } };
+        resp = await query(text, args, options, control);
         if (resp && resp.debug && !debugIncludeToResponse) delete resp.debug;
     } catch (e) {
         const err = api.nfError(e);

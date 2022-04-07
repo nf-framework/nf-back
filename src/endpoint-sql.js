@@ -15,7 +15,6 @@ const appName = '{applicationName}[{instanceName}]:sqlPath[{sqlPath}]';
  * @property {Object} [debug] отладочная информация
  */
 
-
 /**
  * Выполнение sql из файла
  * @param {string} sqlPath относительный путь к sql файлу, где вместо "/" использованы "."
@@ -66,7 +65,8 @@ export async function executeSql(sqlPath, params, options, control) {
         } else {
             provider = innerProviders[0];
         }
-        const queryOptions = { ...sqlOptions, ...options };
+        const defaultOptions = { returnRN: true, rowMode: 'array' };
+        const queryOptions = { ...defaultOptions, ...sqlOptions, ...options };
         queryOptions.provider = provider;
         queryOptions.connectPlace = (!!appName)
             ? appName.replace(/{sqlPath}/g, sqlPath)
