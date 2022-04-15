@@ -426,8 +426,7 @@ function convertToNfAction(from, to, path = '') {
     if (path === '') {
         to.on = [];
         to.attributes = {};
-        const main = from['@main'];
-        if (!main) throw new Error('Описание действия должно содержать свойство [@main]');
+        const main = from['@main'] ?? {};
         if (main.provider) to.attributes.provider = main.provider;
         if (main.out) to.attributes.out = main.out;
         switch (main.type) {
