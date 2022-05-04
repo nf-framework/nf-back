@@ -19,7 +19,7 @@ async function init() {
     web.registerMiddleware('query', query());
     web.registerMiddleware('files', files());
 
-    const { ignoreTimeZone } = config.client || {};
+    const { includeTimeZone } = config.client || {};
     Date.prototype.toJSON = function () {
         const tzo = -this.getTimezoneOffset(),
             dif = tzo >= 0 ? '+' : '-',
@@ -38,7 +38,7 @@ async function init() {
         }:${pad(this.getMinutes())
         }:${pad(this.getSeconds())
         }.${pad3(this.getMilliseconds())
-        }${!ignoreTimeZone ? (`${dif + pad(tzo / 60)}:${pad(tzo % 60)}`) : ''}`;
+        }${includeTimeZone ? (`${dif + pad(tzo / 60)}:${pad(tzo % 60)}`) : ''}`;
     };
 
     dataProviders.js = new NFJsProvider({ type: 'nodejs', credentialsSource: 'session' }, 'js');
