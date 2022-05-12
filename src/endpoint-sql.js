@@ -43,9 +43,9 @@ export async function executeSql(sqlPath, params, options, control) {
             const serverArgs = {};
             sqlOptions.paramsFromSession.reduce((acc, cur) => {
                 if (typeof cur === 'string') {
-                    acc[cur] = context.session.get(`context.${cur}`);
+                    acc[cur] = options.context.session.get(`context.${cur}`);
                 } else if (Array.isArray(cur)) {
-                    acc[cur[0]] = context.session.get(`context.${cur[1]}`);
+                    acc[cur[0]] = options.context.session.get(`context.${cur[1]}`);
                 }
                 return acc;
             }, serverArgs);
