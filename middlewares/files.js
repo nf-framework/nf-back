@@ -1,9 +1,23 @@
-import asyncBusboy from 'async-busboy';
+import busboy from 'busboy';
 
 function files(options) {
     return async function (context) {
-        const { files } = await asyncBusboy(context.req);
-        context.files = files;
+        return new Promise(resolve => {
+            const bb = busboy({ headers: context.req.headers });
+
+            bb.on('file', (name, file, fileInfo) => {
+                context.fileInfo = {
+                    fileName: fileInfo.filename,
+                    fileStream: file,
+                    encoding: fileInfo.encoding,
+                    mimeType: fileInfo.mimeType
+                };
+
+                resolve();
+            });
+
+            context.req.pipe(bb);
+        })
     };
 }
 

@@ -25,15 +25,17 @@
     "dependencies": {
         "@nfjs/core": "^1.0.0",
         "@slq/serv": "^1.0.0",
-        "async-busboy": "^1.1.0",
+        "busboy": "^1.6.0",
         "body-parser": "^1.19.0",
         "fast-glob": "^3.0.4",
         "handlebars": "^4.7.7",
         "just-handlebars-helpers": "^1.0.14",
         "node-abort-controller": "^2.0.0",
         "promised-handlebars": "^2.0.1",
-        "tunnel-ssh": "^4.1.6",
         "vm2": "^3.6.4"
+    },
+    "devDependencies": {
+        "tunnel-ssh": "^4.1.6"
     },
     "exports": {
         ".": "./index.js",
