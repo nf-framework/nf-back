@@ -14,7 +14,7 @@ export function composeServerArgs(session, compose) {
         const vm = new VM({
             sandbox: {
                 __args: {},
-                __sess: session.get('context'),
+                __sess: { ...session.get('context') },
                 _compose: common.compose,
             },
         });
