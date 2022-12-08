@@ -10,7 +10,8 @@ function files(options) {
                     fileName: fileInfo.filename,
                     fileStream: file,
                     encoding: fileInfo.encoding,
-                    mimeType: fileInfo.mimeType
+                    mimeType: fileInfo.mimeType,
+                    fileSize: context.req.headers['content-length']
                 };
 
                 resolve();
