@@ -237,7 +237,7 @@ async function executeAction(action, args, session, options) {
     debug.timingStart(tmng, 'all');
     const { attributes: actAttrs, on: actOn } = action;
     const { out: actOut } = actAttrs;
-    const actArgs = common.cloneDeep(args);
+    const actArgs = common.cloneDeep(args) ?? {};
     // дополнить аргументы необходимыми из сессии пользователя
     if (action?.serverAttributes?.args) Object.assign(actArgs, composeServerArgs(session, action?.serverAttributes?.args));
     // используются ли вложенные действия
