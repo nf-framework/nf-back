@@ -35,8 +35,12 @@ if (appNameActionDataset === 'default') appNameActionDataset = '{applicationName
 async function handleEndpoint(context, ds, args, control) {
     const controller = new AbortController();
     const signal = controller.signal;
-    context.req.on('aborted', () => {
-        controller.abort();
+    context.res.on('close', () => {
+        const { destroyed, writableEnded } = context.res;
+        // weird aborted status clarification
+        if (destroyed && !writableEnded) {
+            controller.abort();
+        }
     });
     const { session } = context;
     let { text, attributes, serverAttributes } = ds;
