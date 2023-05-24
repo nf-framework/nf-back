@@ -25,6 +25,11 @@
             "type": "String",
             "description": "Шаблон для формирования строки, определяющей место в коде приложения вызова соединения при выполнении action и dataset. Пример в значении по умолчанию",
             "default" : "{applicationName}[{instanceName}]:form[{form}]:id[{id}]"
+        },
+        "appNameEndpointSql": {
+            "type": "String",
+            "description": "Шаблон для формирования строки, определяющей место в коде приложения вызова соединения при выполнении endpoint-sql. Пример в значении по умолчанию",
+            "default" : "{applicationName}[{instanceName}]:sqlPath[{sqlPath}]"
         }
     }
 }

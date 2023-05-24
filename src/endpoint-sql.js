@@ -5,8 +5,8 @@ import fs from 'fs/promises';
 
 const endpointSqlDir = 'endpoint/sql/';
 const debugIncludeToResponse = config?.debug?.includeToResponse ?? false;
-const { loggerDataEndpoints } = config?.['@nfjs/back'] || {};
-const appName = '{applicationName}[{instanceName}]:sqlPath[{sqlPath}]';
+let { loggerDataEndpoints, appNameEndpointSql } = config?.['@nfjs/back'] || {};
+if (appNameEndpointSql === 'default') appNameEndpointSql = '{applicationName}[{instanceName}]:sqlPath[{sqlPath}]';
 
 /**
  * @typedef NfExecuteSqlResult
@@ -68,8 +68,8 @@ export async function executeSql(sqlPath, params, options, control) {
         const defaultOptions = { returnRN: true, rowMode: 'array' };
         const queryOptions = { ...defaultOptions, ...sqlOptions, ...options };
         queryOptions.provider = provider;
-        queryOptions.connectPlace = (!!appName)
-            ? appName.replace(/{sqlPath}/g, sqlPath)
+        queryOptions.connectPlace = (!!appNameEndpointSql)
+            ? appNameEndpointSql.replace(/{sqlPath}/g, sqlPath)
             : undefined;
         resp = await query(text, params, queryOptions, control);
         if ('debug' in resp && !debugIncludeToResponse) delete resp.debug;
@@ -110,8 +110,12 @@ export async function endpointSql(context) {
     const sqlPath = context?.params?.sqlPath;
     const controller = new AbortController();
     const signal = controller.signal;
-    context.req.on('aborted', () => {
-        controller.abort();
+    context.res.on('close', () => {
+        const { destroyed, writableEnded } = context.res;
+        // weird aborted status clarification
+        if (destroyed && !writableEnded) {
+            controller.abort();
+        }
     });
     const options = { context, signal };
     return executeSql(sqlPath, args, options, control);
