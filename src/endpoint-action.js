@@ -100,7 +100,9 @@ async function actionOns(providers, args, ons, deepPath, inlineObj, session, ind
     for (let a = 0; a < arrProccess.length; a++) {
         const action = arrProccess[a].$action;
         if (deepPath) {
-            common.setPath(inlineObj, deepPath, common.cloneDeep(arrProccess[a]));
+            //временно откатил
+            //common.setPath(inlineObj, deepPath, common.cloneDeep(arrProccess[a]));
+            common.setPath(inlineObj, deepPath, arrProccess[a]);
         }
         // Для текущего объекта обрабатываем все экшены
         for (let o = 0; o < actsOnForPath.length; o++) {
