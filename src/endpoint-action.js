@@ -100,9 +100,8 @@ async function actionOns(providers, args, ons, deepPath, inlineObj, session, ind
     for (let a = 0; a < arrProccess.length; a++) {
         const action = arrProccess[a].$action;
         if (deepPath) {
-            //временно откатил
-            //common.setPath(inlineObj, deepPath, common.cloneDeep(arrProccess[a]));
-            common.setPath(inlineObj, deepPath, arrProccess[a]);
+            //Создаем клон объекта, так как вложенные могут содержать массивы и тогда текущий массив превратиться в объект, и на следующей итерации выдаст ошибку 
+            common.setPath(inlineObj, deepPath, common.cloneDeep(arrProccess[a]));
         }
         // Для текущего объекта обрабатываем все экшены
         for (let o = 0; o < actsOnForPath.length; o++) {
@@ -111,7 +110,7 @@ async function actionOns(providers, args, ons, deepPath, inlineObj, session, ind
             if (onFilter.indexOf('each') !== -1 || onFilter.indexOf(action) !== -1) {
                 const onId = `#${a}#${actsOnForPath[o].attributes.id || actsOnForPath[o].attributes.action}:${action || 'each'}`;
                 resObj[onId] = resObj[onId] || [];
-                resObj[onId].push(await processAction(true, providers, actsOnForPath[o], arrProccess[a], inlineObj, session));
+                resObj[onId].push(await processAction(true, providers, actsOnForPath[o], arrProccess[a], inlineObj, session, deepPath));
             }
         }
         // Внутрь
@@ -135,7 +134,7 @@ async function actionOns(providers, args, ons, deepPath, inlineObj, session, ind
  * @param {SessionAPI} session сессия пользователя
  * @returns {Promise<{data: Object, debug: Object}>}
  */
-async function processAction(isActionOn, providers, action, args, inlineObj, session) {
+async function processAction(isActionOn, providers, action, args, inlineObj, session, currentPath) {
     let queryText = null;
     let queryArgs = null;
     let queryType = null;
@@ -201,7 +200,11 @@ async function processAction(isActionOn, providers, action, args, inlineObj, ses
         }
         // вставить результат в исходный объект с данными args
         if (attributes.out && queryResult.data) {
+            let curObj = ( currentPath && inlineObj ) ? common.getPath(inlineObj, currentPath) : null;
             if (attributes.out === '...') {
+                if ( curObj ) {
+                    Object.assign(curObj, queryResult.data);
+                }
                 Object.assign(args, queryResult.data);
             } else {
                 attributes.out.split(';').forEach((currOutItem) => {
@@ -209,6 +212,9 @@ async function processAction(isActionOn, providers, action, args, inlineObj, ses
                     let outProp = currOutItem.split(':')[1] || currOutItem.split(':')[0];
                     [outProp] = outProp.split('|');
                     if (outProp in queryResult.data) {
+                        if ( curObj ) {
+                            common.setPath(curObj, targetProp, queryResult.data[outProp]);
+                        }
                         common.setPath(args, targetProp, queryResult.data[outProp]);
                     }
                 });
