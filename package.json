@@ -1,6 +1,6 @@
 {
     "name": "@nfjs/back",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "description": "Backend",
     "license": "MIT",
     "type": "module",
