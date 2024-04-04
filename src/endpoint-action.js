@@ -1,4 +1,4 @@
-import { VM } from 'vm2';
+import VM from 'vm';
 import url from 'url';
 import { config, api, debug, common, container, extension } from '@nfjs/core';
 import { compileText } from './compiler.js';
@@ -155,11 +155,8 @@ async function processAction(isActionOn, providers, action, args, inlineObj, ses
         };
         Object.assign(scriptCtx, args);
         Object.assign(scriptCtx, { __root: inlineObj });
-        const vm = new VM({
-            sandbox: scriptCtx,
-        });
         try {
-            queryArgs = vm.run(scriptArgs);
+            queryArgs = VM.runInNewContext(scriptArgs, scriptCtx);
         } catch (e) {
             const _msg = `Ошибка вычисления аргументов действия [${attributes.action}] для пути [${attributes.path}] с фильтром [${attributes.filter}]`;
             throw api.nfError(e, _msg);
