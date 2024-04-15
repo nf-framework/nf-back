@@ -15,3 +15,4 @@ export { endpointData } from './src/endpoint-data.js';
 export { endpointNfAction, endpointPlAction } from './src/endpoint-action.js';
 export { endpointNfDataset, endpointPlDataset } from './src/endpoint-dataset.js';
 export { executeSql } from './src/endpoint-sql.js';
+export * as compiler from './src/compiler.js';
