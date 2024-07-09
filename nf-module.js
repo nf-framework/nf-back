@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { config, api } from '@nfjs/core';
+import { config, api, common } from '@nfjs/core';
 
 import { endpointData } from './src/endpoint-data.js';
 import { endpointSql } from './src/endpoint-sql.js';
@@ -15,7 +15,9 @@ const __dirname = path.join(path.dirname(decodeURI(new URL(import.meta.url).path
 const menu = await api.loadJSON(`${__dirname}/menu.json`);
 
 async function init() {
-    web.registerMiddleware('json', json({ limit: '5Mb' }));
+    const moduleConfig = common.getPath(config, '@nfjs/back') || {};
+    let jsonCfg = Object.assign({ limit: '5Mb'},  moduleConfig?.json)
+    web.registerMiddleware('json', json(jsonCfg));
     web.registerMiddleware('query', query());
     web.registerMiddleware('files', files());
 
