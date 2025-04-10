@@ -1,4 +1,4 @@
-import { VM } from 'vm2';
+import VM from 'vm';
 import { api, common } from '@nfjs/core';
 
 /**
@@ -11,15 +11,13 @@ export function composeServerArgs(session, compose) {
     let res;
     if (_compose && _compose.startsWith('_compose')) {
         _compose = _compose.replace(/@@/g, '').replace(/@/g, '__sess.');
-        const vm = new VM({
-            sandbox: {
-                __args: {},
-                __sess: { ...session.get('context') },
-                _compose: common.compose,
-            },
-        });
+        const context = {
+            __args: {},
+            __sess: { ...session.get('context') },
+            _compose: common.compose,
+        };
         try {
-            res = vm.run(_compose);
+            res = VM.runInNewContext(_compose, context);
         } catch (e) {
             throw api.nfError(e, 'Ошибка в _compose серверных аргументов.');
         }

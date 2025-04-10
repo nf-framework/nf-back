@@ -31,8 +31,7 @@
         "handlebars": "^4.7.7",
         "just-handlebars-helpers": "^1.0.14",
         "node-abort-controller": "^2.0.0",
-        "promised-handlebars": "^2.0.1",
-        "vm2": "^3.6.4"
+        "promised-handlebars": "^2.0.1"
     },
     "devDependencies": {
         "tunnel-ssh": "^4.1.6"
